@@ -141,31 +141,24 @@ typedef enum
 }   dma_MemoryAddrInc_t;
 
 
-/** Size of single transfer data block on peripheral side */
-typedef enum
-{
-    DMA_PERIPH_TRANSFER_SIZE_BYTE       = LL_DMA_PDATAALIGN_BYTE,     /**< Peripheral data transfer size : 8bits  */
-    DMA_PERIPH_TRANSFER_SIZE_DOUBLEBYTE = LL_DMA_PDATAALIGN_HALFWORD, /**< Peripheral data transfer size : 16bits */
-    DMA_PERIPH_TRANSFER_SIZE_QUADBYTE   = LL_DMA_PDATAALIGN_WORD      /**< Peripheral data transfer size : 32bits */
-}   dma_PeriphTransferSize_t;
-
-
 /** Size of single transfer data block on memory side */
 typedef enum
 {
-    DMA_MEMORY_TRANSFER_SIZE_BYTE       = LL_DMA_MDATAALIGN_BYTE,     /**< Memory data transfer size : 8bits  */
-    DMA_MEMORY_TRANSFER_SIZE_DOUBLEBYTE = LL_DMA_MDATAALIGN_HALFWORD, /**< Memory data transfer size : 16bits */
-    DMA_MEMORY_TRANSFER_SIZE_QUADBYTE   = LL_DMA_MDATAALIGN_WORD      /**< Memory data transfer size : 32bits */
-}   dma_MemoryTransferSize_t;
+    DMA_TRANSFER_SIZE_8BIT = 0u, /**< Memory data transfer size : 8bits  */
+    DMA_TRANSFER_SIZE_16BIT,     /**< Memory data transfer size : 16bits */
+    DMA_TRANSFER_SIZE_32BIT,     /**< Memory data transfer size : 32bits */
+    DMA_TRANSFER_SIZE_CNT        /**< Count of available options         */
+}   dma_TransferSize_t;
 
 
 /** Channel priority options enumeration */
 typedef enum
 {
-    DMA_PRIORITY_LOW      = LL_DMA_PRIORITY_LOW,     /**< Priority level : Low       */
-    DMA_PRIORITY_MEDIUM   = LL_DMA_PRIORITY_MEDIUM,  /**< Priority level : Medium    */
-    DMA_PRIORITY_HIGH     = LL_DMA_PRIORITY_HIGH,    /**< Priority level : High      */
-    DMA_PRIORITY_VERYHIGH = LL_DMA_PRIORITY_VERYHIGH /**< Priority level : Very_High */
+    DMA_PRIORITY_LOW = 0u, /**< Priority level : Low       */
+    DMA_PRIORITY_MEDIUM  , /**< Priority level : Medium    */
+    DMA_PRIORITY_HIGH    , /**< Priority level : High      */
+    DMA_PRIORITY_VERYHIGH, /**< Priority level : Very_High */
+    DMA_PRIORITY_CNT       /**< Count of available options */
 }   dma_Priority_t;
 
 
@@ -343,61 +336,61 @@ typedef enum
 /** DMA peripheral configuration structure */
 typedef struct
 {
-    dma_PeriphId_t           DmaPeriphId;               /**< Specifies DMA number. Can be either DMA1 or DMA2
-                                                             This parameter can be a value of \ref dma_Number_t */
+    dma_PeriphId_t      DmaPeriphId;               /**< Specifies DMA number. Can be either DMA1 or DMA2
+                                                        This parameter can be a value of \ref dma_Number_t */
 
-    dma_ChannelId_t          DmaChannel;                /**< Specifies configured DMA channel.
-                                                             This parameter can be a value of \ref dma_ChannelId_t */
+    dma_ChannelId_t     DmaChannel;                /**< Specifies configured DMA channel.
+                                                        This parameter can be a value of \ref dma_ChannelId_t */
 
-    dma_Direction_t          Direction;                 /**< Specifies if the data will be transferred from memory to peripheral,
-                                                             from memory to memory or from peripheral to memory.
-                                                             This parameter can be a value of \ref dma_Direction_t */
+    dma_Direction_t     Direction;                 /**< Specifies if the data will be transferred from memory to peripheral,
+                                                        from memory to memory or from peripheral to memory.
+                                                        This parameter can be a value of \ref dma_Direction_t */
 
-    dma_TransferMode_t       TransferMode;              /**< Specifies the normal or circular operation mode.
-                                                             This parameter can be a value of \ref dma_TransferMode_t
-                                                             @note: The circular buffer mode cannot be used if the memory to memory
-                                                             data transfer direction is configured on the selected Channel */
+    dma_TransferMode_t  TransferMode;              /**< Specifies the normal or circular operation mode.
+                                                        This parameter can be a value of \ref dma_TransferMode_t
+                                                        @note: The circular buffer mode cannot be used if the memory to memory
+                                                        data transfer direction is configured on the selected Channel */
 
-    dma_PeriphAddr_t         PeriphAddress;             /**< Specifies the peripheral base address for DMA transfer
-                                                             or as Source base address in case of memory to memory transfer direction.
-                                                             This parameter must be a value between Min_Data = 0 and Max_Data = 0xFFFFFFFF. */
+    dma_PeriphAddr_t    PeriphAddress;             /**< Specifies the peripheral base address for DMA transfer
+                                                        or as Source base address in case of memory to memory transfer direction.
+                                                        This parameter must be a value between Min_Data = 0 and Max_Data = 0xFFFFFFFF. */
 
-    dma_MemoryAddr_t         MemoryAddress;             /**< Specifies the memory base address for DMA transfer
-                                                             or as Destination base address in case of memory to memory transfer direction.
-                                                             This parameter must be a value between Min_Data = 0 and Max_Data = 0xFFFFFFFF. */
+    dma_MemoryAddr_t    MemoryAddress;             /**< Specifies the memory base address for DMA transfer
+                                                        or as Destination base address in case of memory to memory transfer direction.
+                                                        This parameter must be a value between Min_Data = 0 and Max_Data = 0xFFFFFFFF. */
 
-    dma_PeriphAddrInc_t      PeriphAddrIncrement;       /**< Specifies whether the Peripheral address or Source address in case of memory to memory transfer direction
-                                                             is incremented or not.
-                                                             This parameter can be a value of \ref dma_PeriphAddrInc_t */
+    dma_PeriphAddrInc_t PeriphAddrIncrement;       /**< Specifies whether the Peripheral address or Source address in case of memory to memory transfer direction
+                                                        is incremented or not.
+                                                        This parameter can be a value of \ref dma_PeriphAddrInc_t */
 
-    dma_MemoryAddrInc_t      MemoryAddrIncrement;       /**< Specifies whether the Memory address or Destination address in case of memory to memory transfer direction
-                                                             is incremented or not.
-                                                             This parameter can be a value of \ref dma_MemoryAddrInc_t */
+    dma_MemoryAddrInc_t MemoryAddrIncrement;       /**< Specifies whether the Memory address or Destination address in case of memory to memory transfer direction
+                                                        is incremented or not.
+                                                        This parameter can be a value of \ref dma_MemoryAddrInc_t */
 
-    dma_PeriphTransferSize_t PeriphTransferSize;        /**< Specifies the Peripheral data size alignment or Source data size alignment (byte, half word, word)
-                                                             in case of memory to memory transfer direction.
-                                                             This parameter can be a value of \ref dma_MemoryAddrInc_t */
+    dma_TransferSize_t  PeriphTransferSize;        /**< Specifies the Peripheral data size alignment or Source data size alignment (byte, half word, word)
+                                                        in case of memory to memory transfer direction.
+                                                        This parameter can be a value of \ref dma_MemoryAddrInc_t */
 
-    dma_MemoryTransferSize_t MemoryTransferSize;        /**< Specifies the Memory data size alignment or Destination data size alignment (byte, half word, word)
-                                                             in case of memory to memory transfer direction.
-                                                             This parameter can be a value of \ref dma_MemoryTransferSize_t */
+    dma_TransferSize_t 	MemoryTransferSize;        /**< Specifies the Memory data size alignment or Destination data size alignment (byte, half word, word)
+                                                        in case of memory to memory transfer direction.
+                                                        This parameter can be a value of \ref dma_MemoryTransferSize_t */
 
-    dma_DataCount_t          DataCount;                 /**< Specifies the number of data to transfer, in data unit.
-                                                             The data unit is equal to the source buffer configuration set in PeripheralSize
-                                                             or MemorySize parameters depending in the transfer direction.
-                                                             This parameter must be a value between Min_Data = 0 and Max_Data = 65535 */
+    dma_DataCount_t     DataCount;                 /**< Specifies the number of data to transfer, in data unit.
+                                                        The data unit is equal to the source buffer configuration set in PeripheralSize
+                                                        or MemorySize parameters depending in the transfer direction.
+                                                        This parameter must be a value between Min_Data = 0 and Max_Data = 65535 */
 
-    dma_PeriphReqId_t        PeripheralReqId;           /**< Specifies the peripheral request.
-                                                             This parameter can be a value of \ref dma_PeriphReqId_t */
+    dma_PeriphReqId_t   PeripheralReqId;           /**< Specifies the peripheral request.
+                                                        This parameter can be a value of \ref dma_PeriphReqId_t */
 
-    dma_Priority_t           Priority;                  /**< Specifies the channel priority level.
-                                                             This parameter can be a value of \ref dma_Priority_t */
+    dma_Priority_t      Priority;                  /**< Specifies the channel priority level.
+                                                        This parameter can be a value of \ref dma_Priority_t */
 
-    dma_IsrCallback          TransferCompleteCallback;  /**< Pointer to user callback executed with transfer complete interrupt */
+    dma_IsrCallback     TransferCompleteCallback;  /**< Pointer to user callback executed with transfer complete interrupt */
 
-    dma_IsrCallback          HalfTransferCallback;      /**< Pointer to user callback executed with half transfer interrupt */
+    dma_IsrCallback     HalfTransferCallback;      /**< Pointer to user callback executed with half transfer interrupt */
 
-    dma_IsrCallback          TransferErrorCallback;     /**< Pointer to user callback executed with transfer error interrupt */
+    dma_IsrCallback     TransferErrorCallback;     /**< Pointer to user callback executed with transfer error interrupt */
 
 }   dma_ConfigStruct_t;
 

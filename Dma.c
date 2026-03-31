@@ -224,7 +224,7 @@ dma_ModuleVersion_t Dma_Get_ModuleVersion( void )
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_Get_DefaultConfig( dma_ConfigStruct_t* dmaConfig )
+dma_RequestState_t Dma_Get_DefaultConfig( dma_ConfigStruct_t * const dmaConfig )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
 
@@ -238,8 +238,8 @@ dma_RequestState_t Dma_Get_DefaultConfig( dma_ConfigStruct_t* dmaConfig )
         dmaConfig->MemoryAddress       = 0x00;
         dmaConfig->PeriphAddrIncrement = DMA_PERIPH_ADDR_STATIC;
         dmaConfig->MemoryAddrIncrement = DMA_MEMORY_ADDR_STATIC;
-        dmaConfig->PeriphTransferSize  = DMA_PERIPH_TRANSFER_SIZE_BYTE;
-        dmaConfig->MemoryTransferSize  = DMA_MEMORY_TRANSFER_SIZE_BYTE;
+        dmaConfig->PeriphTransferSize  = DMA_TRANSFER_SIZE_8BIT;
+        dmaConfig->MemoryTransferSize  = DMA_TRANSFER_SIZE_8BIT;
         dmaConfig->DataCount           = 0u;
         dmaConfig->PeripheralReqId     = DMA_REQ_MEM2MEM;
         dmaConfig->Priority            = 0u;
@@ -267,7 +267,7 @@ dma_RequestState_t Dma_Get_DefaultConfig( dma_ConfigStruct_t* dmaConfig )
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_StructInit( dma_ConfigStruct_t *dmaConfig )
+dma_RequestState_t Dma_Init( dma_ConfigStruct_t * const dmaConfig )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
 
@@ -401,6 +401,137 @@ dma_RequestState_t Dma_StructInit( dma_ConfigStruct_t *dmaConfig )
                 return ( retState );
             }
         }
+    }
+    else
+    {
+        retState = DMA_REQUEST_ERROR;
+    }
+
+    return ( retState );
+}
+
+
+/**
+ * \brief Activates transfer of selected DMA channel
+ *
+ * \param dmaBus         [in]: DMA peripheral ID
+ * \param dmaChannel     [in]: DMA channel ID
+ * \return State of request execution. Returns "OK" if request was success,
+ *         otherwise return error.
+ */
+dma_RequestState_t Dma_Set_TransferActive( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel )
+{
+    dma_RequestState_t retState = DMA_REQUEST_ERROR;
+    uint32_t           regValue = 0u;
+
+    if( ( DMA_PERIPH_CNT  > dmaBus     ) &&
+        ( DMA_CHANNEL_CNT > dmaChannel )    )
+    {
+        LL_DMA_EnableChannel( dma_PeriphConf[ dmaBus ].DmaReg,
+                              dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+
+        for( uint32_t iterationCnt = 0u; DMA_TIMEOUT_RAW > iterationCnt; iterationCnt ++ )
+        {
+            regValue = LL_DMA_IsEnabledChannel( dma_PeriphConf[ dmaBus ].DmaReg,
+                                                dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+
+            if( 0u != regValue )
+            {
+                retState = DMA_REQUEST_OK;
+                break;
+            }
+            else
+            {
+                /* Clock source has not yet been changed, keep return state as error */
+                retState = DMA_REQUEST_ERROR;
+            }
+        }
+    }
+    else
+    {
+        retState = DMA_REQUEST_ERROR;
+    }
+
+    return ( retState );
+}
+
+
+/**
+ * \brief De-activates transfer of selected DMA channel
+ *
+ * \param dmaBus         [in]: DMA peripheral ID
+ * \param dmaChannel     [in]: DMA channel ID
+ * \return State of request execution. Returns "OK" if request was success,
+ *         otherwise return error.
+ */
+dma_RequestState_t Dma_Set_TransferInactive( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel )
+{
+    dma_RequestState_t retState = DMA_REQUEST_ERROR;
+    uint32_t           regValue = 0u;
+
+    if( ( DMA_PERIPH_CNT  > dmaBus     ) &&
+        ( DMA_CHANNEL_CNT > dmaChannel )    )
+    {
+        LL_DMA_DisableChannel( dma_PeriphConf[ dmaBus ].DmaReg,
+                              dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+
+        for( uint32_t iterationCnt = 0u; DMA_TIMEOUT_RAW > iterationCnt; iterationCnt ++ )
+        {
+            regValue = LL_DMA_IsEnabledChannel( dma_PeriphConf[ dmaBus ].DmaReg,
+                                                dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+
+            if( 0u == regValue )
+            {
+                retState = DMA_REQUEST_OK;
+                break;
+            }
+            else
+            {
+                /* Clock source has not yet been changed, keep return state as error */
+                retState = DMA_REQUEST_ERROR;
+            }
+        }
+    }
+    else
+    {
+        retState = DMA_REQUEST_ERROR;
+    }
+
+    return ( retState );
+}
+
+
+/**
+ * \brief Returns transfer state of selected DMA channel
+ *
+ * \param dmaBus         [in]: DMA peripheral ID
+ * \param dmaChannel     [in]: DMA channel ID
+ * \param transferState [out]: Channel active/inactive state
+ * \return State of request execution. Returns "OK" if request was success,
+ *         otherwise return error.
+ */
+dma_RequestState_t Dma_Get_TransferState( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_FunctionState_t * const transferState )
+{
+    dma_RequestState_t retState = DMA_REQUEST_ERROR;
+    uint32_t           regValue = 0u;
+
+    if( ( DMA_PERIPH_CNT  > dmaBus        ) &&
+        ( DMA_CHANNEL_CNT > dmaChannel    ) &&
+        ( DMA_NULL_PTR   != transferState )    )
+    {
+        regValue = LL_DMA_IsEnabledChannel( dma_PeriphConf[ dmaBus ].DmaReg,
+                                            dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+
+        if( 0u == regValue )
+        {
+            *transferState = DMA_FUNCTION_ACTIVE;
+        }
+        else
+        {
+            *transferState = DMA_FUNCTION_INACTIVE;
+        }
+
+        retState = DMA_REQUEST_OK;
     }
     else
     {
@@ -1014,23 +1145,37 @@ dma_RequestState_t Dma_Get_MemoryAddrIncrement( dma_PeriphId_t dmaBus, dma_Chann
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_Set_PeriphTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_PeriphTransferSize_t periphTransferSize)
+dma_RequestState_t Dma_Set_PeriphTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_TransferSize_t periphTransferSize)
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
     uint32_t           regValue = 0u;
+    uint32_t           reqValue = 0u;
 
     if( DMA_PERIPH_CNT > dmaBus )
     {
+        if( DMA_TRANSFER_SIZE_32BIT == periphTransferSize )
+        {
+            reqValue = LL_DMA_PDATAALIGN_WORD;
+        }
+        else if( DMA_TRANSFER_SIZE_16BIT == periphTransferSize )
+        {
+            reqValue = LL_DMA_PDATAALIGN_HALFWORD;
+        }
+        else
+        {
+            reqValue = LL_DMA_PDATAALIGN_BYTE;
+        }
+
         LL_DMA_SetPeriphSize( dma_PeriphConf[ dmaBus ].DmaReg,
                               dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg,
-                              periphTransferSize );
+                              reqValue );
 
         for( uint32_t iterationCnt = 0u; DMA_TIMEOUT_RAW > iterationCnt; iterationCnt ++ )
         {
             regValue = LL_DMA_GetPeriphSize( dma_PeriphConf[ dmaBus ].DmaReg,
                                              dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
 
-            if( periphTransferSize == regValue )
+            if( reqValue == regValue )
             {
                 retState = DMA_REQUEST_OK;
                 break;
@@ -1060,15 +1205,29 @@ dma_RequestState_t Dma_Set_PeriphTransferSize( dma_PeriphId_t dmaBus, dma_Channe
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_Get_PeriphTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_PeriphTransferSize_t *periphTransferSize )
+dma_RequestState_t Dma_Get_PeriphTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_TransferSize_t *periphTransferSize )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
+    uint32_t           regValue = 0u;
 
     if( ( DMA_PERIPH_CNT > dmaBus             ) &&
         ( DMA_NULL_PTR  != periphTransferSize )    )
     {
-        *periphTransferSize = LL_DMA_GetPeriphSize( dma_PeriphConf[ dmaBus ].DmaReg,
-                                                    dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+        regValue = LL_DMA_GetPeriphSize( dma_PeriphConf[ dmaBus ].DmaReg,
+                                         dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+
+        if( LL_DMA_PDATAALIGN_WORD == regValue )
+        {
+            *periphTransferSize = DMA_TRANSFER_SIZE_32BIT;
+        }
+        else if( LL_DMA_PDATAALIGN_HALFWORD == regValue )
+        {
+            *periphTransferSize = DMA_TRANSFER_SIZE_16BIT;
+        }
+        else
+        {
+            *periphTransferSize = DMA_TRANSFER_SIZE_8BIT;
+        }
 
         retState = DMA_REQUEST_OK;
     }
@@ -1081,33 +1240,47 @@ dma_RequestState_t Dma_Get_PeriphTransferSize( dma_PeriphId_t dmaBus, dma_Channe
 }
 
 
-
 /**
- * \brief Configures DMA transfer size.
+ * \brief Configures DMA memory transfer size.
  *
  * \param dmaBus             [in]: DMA peripheral ID
  * \param dmaChannel         [in]: DMA channel ID
  * \param memoryTransferSize [in]: Memory transfer size.
+ *
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_Set_MemoryTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_MemoryTransferSize_t memoryTransferSize )
+dma_RequestState_t Dma_Set_MemoryTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_TransferSize_t memoryTransferSize )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
     uint32_t           regValue = 0u;
+    uint32_t           reqValue = 0u;
 
     if( DMA_PERIPH_CNT > dmaBus )
     {
+        if( DMA_TRANSFER_SIZE_32BIT == memoryTransferSize )
+        {
+            reqValue = LL_DMA_MDATAALIGN_WORD;
+        }
+        else if( DMA_TRANSFER_SIZE_16BIT == memoryTransferSize )
+        {
+            reqValue = LL_DMA_MDATAALIGN_HALFWORD;
+        }
+        else
+        {
+            reqValue = LL_DMA_MDATAALIGN_BYTE;
+        }
+
         LL_DMA_SetMemorySize( dma_PeriphConf[ dmaBus ].DmaReg,
                               dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg,
-                              memoryTransferSize );
+                              reqValue );
 
         for( uint32_t iterationCnt = 0u; DMA_TIMEOUT_RAW > iterationCnt; iterationCnt ++ )
         {
             regValue = LL_DMA_GetMemorySize( dma_PeriphConf[ dmaBus ].DmaReg,
                                              dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
 
-            if( memoryTransferSize == regValue )
+            if( reqValue == regValue )
             {
                 retState = DMA_REQUEST_OK;
                 break;
@@ -1134,18 +1307,34 @@ dma_RequestState_t Dma_Set_MemoryTransferSize( dma_PeriphId_t dmaBus, dma_Channe
  * \param dmaBus              [in]: DMA peripheral ID
  * \param dmaChannel          [in]: DMA channel ID
  * \param memoryTransferSize [out]: Memory transfer size.
+ *
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_Get_MemoryTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_MemoryTransferSize_t *memoryTransferSize )
+dma_RequestState_t Dma_Get_MemoryTransferSize( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_TransferSize_t *memoryTransferSize )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
+    uint32_t           regValue = 0u;
 
-    if( ( DMA_PERIPH_CNT > dmaBus             ) &&
-        ( DMA_NULL_PTR  != memoryTransferSize )    )
+    if( ( DMA_PERIPH_CNT  > dmaBus             ) &&
+        ( DMA_CHANNEL_CNT > dmaChannel         ) &&
+        ( DMA_NULL_PTR   != memoryTransferSize )    )
     {
-        *memoryTransferSize = LL_DMA_GetMemorySize( dma_PeriphConf[ dmaBus ].DmaReg,
-                                                    dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+        regValue = LL_DMA_GetMemorySize( dma_PeriphConf[ dmaBus ].DmaReg,
+                                         dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+
+        if( LL_DMA_MDATAALIGN_WORD == regValue )
+        {
+            *memoryTransferSize = DMA_TRANSFER_SIZE_32BIT;
+        }
+        else if( LL_DMA_MDATAALIGN_HALFWORD == regValue )
+        {
+            *memoryTransferSize = DMA_TRANSFER_SIZE_16BIT;
+        }
+        else
+        {
+            *memoryTransferSize = DMA_TRANSFER_SIZE_8BIT;
+        }
 
         retState = DMA_REQUEST_OK;
     }
@@ -1289,7 +1478,7 @@ dma_RequestState_t Dma_Set_PeripheralRequest( dma_PeriphId_t dmaBus, dma_Channel
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_Get_PeripheralRequest( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_PeriphReqId_t *requestId )
+dma_RequestState_t Dma_Get_PeripheralRequest( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_PeriphReqId_t * const requestId )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
 
@@ -1323,19 +1512,40 @@ dma_RequestState_t Dma_Set_Priority( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaC
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
     uint32_t           regValue = 0u;
+    uint32_t           reqValue = 0u;
 
-    if( DMA_PERIPH_CNT > dmaBus )
+    if( ( DMA_PERIPH_CNT  > dmaBus     ) &&
+        ( DMA_CHANNEL_CNT > dmaChannel ) &&
+        ( DMA_PRIORITY_CNT > priority  )    )
     {
+        if( DMA_PRIORITY_LOW == priority )
+        {
+            reqValue = LL_DMA_PRIORITY_LOW;
+        }
+        else if( DMA_PRIORITY_MEDIUM == priority )
+        {
+            reqValue = LL_DMA_PRIORITY_MEDIUM;
+        }
+        else if( DMA_PRIORITY_HIGH == priority )
+        {
+            reqValue = LL_DMA_PRIORITY_HIGH;
+        }
+        else
+        {
+            reqValue = LL_DMA_PRIORITY_VERYHIGH;
+        }
+
+
         LL_DMA_SetChannelPriorityLevel( dma_PeriphConf[ dmaBus ].DmaReg,
                                         dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg,
-                                        priority );
+                                        reqValue );
 
         for( uint32_t iterationCnt = 0u; DMA_TIMEOUT_RAW > iterationCnt; iterationCnt ++ )
         {
             regValue = LL_DMA_GetChannelPriorityLevel( dma_PeriphConf[ dmaBus ].DmaReg,
                                                        dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
 
-            if( priority == regValue )
+            if( reqValue == regValue )
             {
                 retState = DMA_REQUEST_OK;
                 break;
@@ -1365,144 +1575,33 @@ dma_RequestState_t Dma_Set_Priority( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaC
  * \return State of request execution. Returns "OK" if request was success,
  *         otherwise return error.
  */
-dma_RequestState_t Dma_Get_Priority( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_Priority_t *priority )
-{
-    dma_RequestState_t retState = DMA_REQUEST_ERROR;
-
-    if( ( DMA_PERIPH_CNT > dmaBus   ) &&
-        ( DMA_NULL_PTR  != priority )    )
-    {
-        *priority = LL_DMA_GetChannelPriorityLevel( dma_PeriphConf[ dmaBus ].DmaReg,
-                                                    dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
-
-        retState = DMA_REQUEST_OK;
-    }
-    else
-    {
-        retState = DMA_REQUEST_ERROR;
-    }
-
-    return ( retState );
-}
-
-
-/**
- * \brief Activates transfer of selected DMA channel
- *
- * \param dmaBus         [in]: DMA peripheral ID
- * \param dmaChannel     [in]: DMA channel ID
- * \return State of request execution. Returns "OK" if request was success,
- *         otherwise return error.
- */
-dma_RequestState_t Dma_Set_TransferActive( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel )
+dma_RequestState_t Dma_Get_Priority( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_Priority_t * const priority )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
     uint32_t           regValue = 0u;
 
     if( ( DMA_PERIPH_CNT  > dmaBus     ) &&
-        ( DMA_CHANNEL_CNT > dmaChannel )    )
+        ( DMA_CHANNEL_CNT > dmaChannel ) &&
+        ( DMA_NULL_PTR   != priority   )    )
     {
-        LL_DMA_EnableChannel( dma_PeriphConf[ dmaBus ].DmaReg,
-                              dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
+        regValue = LL_DMA_GetChannelPriorityLevel( dma_PeriphConf[ dmaBus ].DmaReg,
+                                                   dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
 
-        for( uint32_t iterationCnt = 0u; DMA_TIMEOUT_RAW > iterationCnt; iterationCnt ++ )
+        if( LL_DMA_PRIORITY_LOW == regValue )
         {
-            regValue = LL_DMA_IsEnabledChannel( dma_PeriphConf[ dmaBus ].DmaReg,
-                                                dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
-
-            if( 0u != regValue )
-            {
-                retState = DMA_REQUEST_OK;
-                break;
-            }
-            else
-            {
-                /* Clock source has not yet been changed, keep return state as error */
-                retState = DMA_REQUEST_ERROR;
-            }
+            *priority = DMA_PRIORITY_LOW;
         }
-    }
-    else
-    {
-        retState = DMA_REQUEST_ERROR;
-    }
-
-    return ( retState );
-}
-
-
-/**
- * \brief De-activates transfer of selected DMA channel
- *
- * \param dmaBus         [in]: DMA peripheral ID
- * \param dmaChannel     [in]: DMA channel ID
- * \return State of request execution. Returns "OK" if request was success,
- *         otherwise return error.
- */
-dma_RequestState_t Dma_Set_TransferInactive( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel )
-{
-    dma_RequestState_t retState = DMA_REQUEST_ERROR;
-    uint32_t           regValue = 0u;
-
-    if( ( DMA_PERIPH_CNT  > dmaBus     ) &&
-        ( DMA_CHANNEL_CNT > dmaChannel )    )
-    {
-        LL_DMA_DisableChannel( dma_PeriphConf[ dmaBus ].DmaReg,
-                              dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
-
-        for( uint32_t iterationCnt = 0u; DMA_TIMEOUT_RAW > iterationCnt; iterationCnt ++ )
+        else if( LL_DMA_PRIORITY_MEDIUM == regValue )
         {
-            regValue = LL_DMA_IsEnabledChannel( dma_PeriphConf[ dmaBus ].DmaReg,
-                                                dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
-
-            if( 0u == regValue )
-            {
-                retState = DMA_REQUEST_OK;
-                break;
-            }
-            else
-            {
-                /* Clock source has not yet been changed, keep return state as error */
-                retState = DMA_REQUEST_ERROR;
-            }
+            *priority = DMA_PRIORITY_MEDIUM;
         }
-    }
-    else
-    {
-        retState = DMA_REQUEST_ERROR;
-    }
-
-    return ( retState );
-}
-
-
-/**
- * \brief Returns transfer state of selected DMA channel
- *
- * \param dmaBus         [in]: DMA peripheral ID
- * \param dmaChannel     [in]: DMA channel ID
- * \param transferState [out]: Channel active/inactive state
- * \return State of request execution. Returns "OK" if request was success,
- *         otherwise return error.
- */
-dma_RequestState_t Dma_Get_TransferState( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_FunctionState_t *transferState )
-{
-    dma_RequestState_t retState = DMA_REQUEST_ERROR;
-    uint32_t           regValue = 0u;
-
-    if( ( DMA_PERIPH_CNT > dmaBus        ) &&
-        ( DMA_NULL_PTR  != transferState )    )
-    {
-        regValue = LL_DMA_IsEnabledChannel( dma_PeriphConf[ dmaBus ].DmaReg,
-                                            dma_PeriphConf[ dmaBus ].ChannelsConfig[ dmaChannel ].ChannelReg );
-
-        if( 0u == regValue )
+        else if( LL_DMA_PRIORITY_HIGH == regValue )
         {
-            *transferState = DMA_FUNCTION_ACTIVE;
+            *priority = DMA_PRIORITY_HIGH;
         }
         else
         {
-            *transferState = DMA_FUNCTION_INACTIVE;
+            *priority = DMA_PRIORITY_VERYHIGH;
         }
 
         retState = DMA_REQUEST_OK;
@@ -1838,7 +1937,7 @@ dma_RequestState_t Dma_Set_TransferCompleteIsrHandler( dma_PeriphId_t dmaBus, dm
 }
 
 
-dma_RequestState_t Dma_Get_TransferCompleteIsrHandler( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_IsrCallback *irqHandler )
+dma_RequestState_t Dma_Get_TransferCompleteIsrHandler( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_IsrCallback *  const irqHandler )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
 
@@ -1879,7 +1978,7 @@ dma_RequestState_t Dma_Set_HalfTransferIsrHandler( dma_PeriphId_t dmaBus, dma_Ch
 }
 
 
-dma_RequestState_t Dma_Get_HalfTransferIsrHandler( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_IsrCallback *irqHandler )
+dma_RequestState_t Dma_Get_HalfTransferIsrHandler( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_IsrCallback * const irqHandler )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
 
@@ -1920,7 +2019,7 @@ dma_RequestState_t Dma_Set_TransferErrorIsrHandler( dma_PeriphId_t dmaBus, dma_C
 }
 
 
-dma_RequestState_t Dma_Get_TransferErrorIsrHandler( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_IsrCallback *irqHandler )
+dma_RequestState_t Dma_Get_TransferErrorIsrHandler( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_IsrCallback * const irqHandler )
 {
     dma_RequestState_t retState = DMA_REQUEST_ERROR;
 
