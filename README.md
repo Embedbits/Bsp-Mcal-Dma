@@ -64,6 +64,24 @@ Only **Dma_Port.h** shall be used by application code.
 
 ---
 
+## STM32L4 / STM32L4+ specifics
+
+- DMA1 and DMA2 have 7 channels each.
+- STM32L4 (no DMAMUX): the peripheral request is selected by the 4-bit field of the channel in
+  DMA_CSELR. Every channel serves only the requests of its fixed mapping (RM0351 / RM0394 DMA
+  request tables, STM32CubeMX DMA database). A request not mapped to the channel is refused by
+  `Dma_Set_PeripheralRequest()` / `Dma_Init()`. Requests sharing one request line of the channel
+  (e.g. TIM1_CH4 / TIM1_TRIG / TIM1_COM) are read back as configured. `DMA_REQ_MEM2MEM` writes
+  the reset value 0 of the field.
+- STM32L4+ (DMAMUX1): any request can be routed to any channel. DMAMUX1 channels 0 - 6 serve
+  DMA1 channels 1 - 7, DMAMUX1 channels 7 - 13 serve DMA2 channels 1 - 7. The DMAMUX1 clock is
+  activated by `Dma_Init()`. The request generator and synchronization of DMAMUX1 are not used.
+- The configuration of an enabled channel is refused (registers are write protected by hardware).
+- The global flag GIFx is not cleared by the interrupt handler. Every ISR ends with DSB
+  (Cortex-M4 r0p1 erratum 838869). STM32L4 errata sheets are not reviewed yet.
+
+---
+
 # 📦 Public API Summary
 
 Full API available in **Dma_Port.h**.
