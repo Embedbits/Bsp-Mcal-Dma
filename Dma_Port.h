@@ -30,12 +30,12 @@ extern "C" {
 
 dma_ModuleVersion_t     Dma_Get_ModuleVersion               ( void );
 
-dma_RequestState_t      Dma_Get_DefaultConfig               ( dma_ConfigStruct_t * const clockConfig );
-dma_RequestState_t      Dma_Init                            ( dma_ConfigStruct_t * const clockConfig );
+dma_RequestState_t      Dma_Get_DefaultConfig               ( dma_ConfigStruct_t * const dmaConfig );
+dma_RequestState_t      Dma_Init                            ( dma_ConfigStruct_t * const dmaConfig );
 
 dma_RequestState_t      Dma_Set_TransferActive              ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel );
 dma_RequestState_t      Dma_Set_TransferInactive            ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel );
-dma_RequestState_t      Dma_Get_TransfertState              ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_FunctionState_t * const transferState );
+dma_RequestState_t      Dma_Get_TransferState               ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_FunctionState_t * const transferState );
 
 dma_RequestState_t      Dma_Set_ChannelActive               ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel );
 dma_RequestState_t      Dma_Set_ChannelInactive             ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel );

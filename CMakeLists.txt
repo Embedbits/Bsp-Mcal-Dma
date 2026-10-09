@@ -25,6 +25,7 @@ set( Dma_SourceFiles
 # List of public header files provided by the current library
 set( Dma_PublicHeaders 
     Dma_Port.h 
+    Dma_Types.h
 )
 
 
@@ -80,10 +81,9 @@ target_include_directories( Dma_Lib
     PUBLIC
         $<BUILD_INTERFACE:${PUBLIC_HEADERS_DIR}>
         $<INSTALL_INTERFACE:include>
-        Dma_PublicIncludeDirs
+        ${Dma_PublicIncludeDirs}
     PRIVATE
-        ${Dma_IncludeDirs}
-        Dma_PrivateIncludeDirs
+        ${Dma_PrivateIncludeDirs}
 )
 
 
@@ -93,4 +93,14 @@ message(STATUS "Dma_Lib library created")
 #========================= Documentation configuration ========================#
 if(DOXYGEN_AVAILABLE STREQUAL "ON")
     Doxygen_AddPath("${CMAKE_CURRENT_SOURCE_DIR}/")
+endif()
+
+#========================= Unit tests configuration ===========================#
+if(UNIT_TESTING_AVAILABLE STREQUAL "ON")
+    UnitTesting_AddPath("${CMAKE_CURRENT_SOURCE_DIR}/Tests/UnitTests")
+endif()
+
+#===================== Integration tests configuration ========================#
+if(INTEGRATION_TESTING_AVAILABLE STREQUAL "ON")
+    IntegrationTesting_AddPath("${CMAKE_CURRENT_SOURCE_DIR}/Tests/IntegrationTests")
 endif()
