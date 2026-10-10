@@ -1,0 +1,29 @@
+#===================== Integration tests configuration ========================#
+# Integration tests of Dma module on target (Nucleo-144 boards of STM32H7). Registered in module
+# CMakeLists.txt by IntegrationTesting_AddPath() and created by
+# IntegrationTesting_Generate() in "IntegrationTest" build
+# (see EmBi_Platform/CMake/IntegrationTesting/README.md).
+#
+# The test set is independent - target interface (entry point, initialization,
+# fault handlers, system reset) is implemented by ItTarget_Dma.c and
+# all libraries of the firmware are listed here.
+
+# StartUp calls BspMain() - the entry point of the test firmware is provided by
+# the test set (BspMain.h, ItTarget_Dma.c)
+if(NOT TARGET BspMain_Lib)
+    add_library(BspMain_Lib INTERFACE)
+    target_include_directories(BspMain_Lib INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+endif()
+
+# STM32H7R / STM32H7S have no DMA1 / DMA2 (module is empty, GPDMA1 / HPDMA1 are tested by Gpdma)
+if(NOT MCU_FAMILY_ID STREQUAL "STM32H7RSxx")
+    IntegrationTesting_Add_Test(
+        NAME            Dma
+        TEST_SOURCE     ItTest_Dma.c
+        SOURCES         ItTarget_Dma.c      # Target interface of the test set
+        LINK_LIBS       StartUp_Lib         # Startup code (calls BspMain)
+                        Nvic_Lib            # Fault handlers, system reset (ItTarget)
+                        Dma_Lib             # Module under test
+        TIMEOUT         30
+    )
+endif()
