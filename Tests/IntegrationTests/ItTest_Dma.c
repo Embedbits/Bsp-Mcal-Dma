@@ -427,7 +427,10 @@ static void It_Dma_WaitTransferInactive( void )
 {
     dma_FunctionState_t state = DMA_FUNCTION_ACTIVE;
 
-    for( uint32_t loopCnt = 0u; ( DMA_FUNCTION_INACTIVE != state ) && ( IT_DMA_WAIT_LOOPS > loopCnt ); loopCnt++ )
+    for( uint32_t loopCnt = 0u;
+         ( DMA_FUNCTION_INACTIVE != state ) &&
+         ( IT_DMA_WAIT_LOOPS > loopCnt );
+         loopCnt++ )
     {
         TEST_ASSERT_EQUAL( DMA_REQUEST_OK, Dma_Get_TransferState( IT_DMA_PERIPH, IT_DMA_STREAM, &state ) );
     }
@@ -443,7 +446,10 @@ static void It_Dma_WaitTransferInactive( void )
  */
 static void It_Dma_WaitCallback( volatile const uint32_t * const callbackSeq )
 {
-    for( uint32_t loopCnt = 0u; ( 0u == *callbackSeq ) && ( IT_DMA_WAIT_LOOPS > loopCnt ); loopCnt++ )
+    for( uint32_t loopCnt = 0u;
+         ( 0u == *callbackSeq ) &&
+         ( IT_DMA_WAIT_LOOPS > loopCnt );
+         loopCnt++ )
     {
         /* Waiting for interrupt */
     }
