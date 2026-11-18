@@ -20,6 +20,12 @@
  *       (SxCR TRBUFF), set by \ref Dma_Set_PeripheralRequest (not on revision Y
  *       of STM32H742 / H743 / H745 / H747 / H750 / H753 / H755 / H757).
  *
+ * \note Device errata "HASH input data may be corrupted when DMA is used" (ES0392
+ *       2.2.28, ES0445 2.3.12): the stream serving the HASH_IN request uses
+ *       bufferable transfers too (the workaround of the erratum); the other rule
+ *       of the workaround - no enabled stream on the other DMA controller during
+ *       the HASH transfer - is a rule of the application.
+ *
  * \note  The module is empty on MCUs without DMA1 / DMA2 streams (STM32H7R / STM32H7S -
  *        GPDMA1 / HPDMA1 are handled by the Gpdma module).
  */
@@ -117,7 +123,7 @@ typedef struct
 static uint32_t Dma_Get_Flags                ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel );
 static void     Dma_Clear_Flags              ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, uint32_t flags );
 static dma_RequestState_t Dma_Set_FifoMode   ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_FunctionState_t fifoState );
-static dma_FunctionState_t Dma_Get_UartRequest( dma_PeriphReqId_t requestId );
+static dma_FunctionState_t Dma_Get_BufferableRequest( dma_PeriphReqId_t requestId );
 static void     Dma_Set_BufferableTransfer   ( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_PeriphReqId_t requestId );
 
 static void Dma_GlobalIsrHandler( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel );
@@ -145,9 +151,13 @@ static void Dma_Dma2Stream7_IsrHandler( void );
 
 /* =========================== LOCAL VARIABLES ============================== */
 
-/** UART / USART requests served with bufferable transfers (device errata "UART / USART - DMA transfer lock") */
-static const dma_PeriphReqId_t              dma_UartRequestLut[] =
+/** Requests served with bufferable transfers: UART / USART (device errata "UART / USART - DMA transfer lock") and
+ *  HASH_IN (device errata "HASH input data may be corrupted when DMA is used") */
+static const dma_PeriphReqId_t              dma_BufferableRequestLut[] =
 {
+#if defined(HASH)
+    DMA_REQ_HASH_IN,
+#endif
     DMA_REQ_USART1_RX, DMA_REQ_USART1_TX,
     DMA_REQ_USART2_RX, DMA_REQ_USART2_TX,
     DMA_REQ_USART3_RX, DMA_REQ_USART3_TX,
@@ -1648,7 +1658,8 @@ dma_RequestState_t Dma_Get_DataCount( dma_PeriphId_t dmaBus, dma_ChannelId_t dma
  * \brief Configures DMA transfer trigger request ID (DMAMUX1 request of the stream)
  *
  * Request of UART / USART is served with bufferable transfers (device errata
- * "UART / USART - DMA transfer lock"), other requests without them.
+ * "UART / USART - DMA transfer lock"), the request HASH_IN too (device errata
+ * "HASH input data may be corrupted when DMA is used"), other requests without them.
  *
  * \param dmaBus     [in]: DMA peripheral ID
  * \param dmaChannel [in]: DMA stream ID
@@ -2511,19 +2522,21 @@ static dma_RequestState_t Dma_Set_FifoMode( dma_PeriphId_t dmaBus, dma_ChannelId
 /* =========================== INTERRUPT HANDLERS =========================== */
 
 /**
- * \brief Checks if the request belongs to UART / USART (bufferable transfers).
+ * \brief Checks if the request is served with bufferable transfers (UART / USART, HASH_IN).
  *
  * \param requestId [in]: DMAMUX1 request identification
- * \return \ref DMA_FUNCTION_ACTIVE for UART / USART request, otherwise
+ * \return \ref DMA_FUNCTION_ACTIVE for UART / USART or HASH_IN request, otherwise
  *         \ref DMA_FUNCTION_INACTIVE.
  */
-static dma_FunctionState_t Dma_Get_UartRequest( dma_PeriphReqId_t requestId )
+static dma_FunctionState_t Dma_Get_BufferableRequest( dma_PeriphReqId_t requestId )
 {
     dma_FunctionState_t retState = DMA_FUNCTION_INACTIVE;
 
-    for( uint32_t lutIdx = 0u; ( sizeof( dma_UartRequestLut ) / sizeof( dma_UartRequestLut[ 0u ] ) ) > lutIdx; lutIdx ++ )
+    for( uint32_t lutIdx = 0u;
+         ( sizeof( dma_BufferableRequestLut ) / sizeof( dma_BufferableRequestLut[ 0u ] ) ) > lutIdx;
+         lutIdx ++ )
     {
-        if( dma_UartRequestLut[ lutIdx ] == requestId )
+        if( dma_BufferableRequestLut[ lutIdx ] == requestId )
         {
             retState = DMA_FUNCTION_ACTIVE;
             break;
@@ -2544,8 +2557,10 @@ static dma_FunctionState_t Dma_Get_UartRequest( dma_PeriphReqId_t requestId )
  *
  * Device errata "UART / USART - DMA transfer lock": DMA stream serving UART / USART
  * may be locked - bufferable transfers are used for UART / USART requests (as ST
- * HAL does). Revision Y of STM32H742 / H743 / H745 / H747 / H750 / H753 / H755 /
- * H757 does not use them (ST HAL).
+ * HAL does). Device errata "HASH input data may be corrupted when DMA is used" (ES0392
+ * 2.2.28, ES0445 2.3.12): the HASH_IN request is served with bufferable transfers too.
+ * Revision Y of STM32H742 / H743 / H745 / H747 / H750 / H753 / H755 / H757 does not
+ * use them (ST HAL).
  *
  * \param dmaBus     [in]: DMA peripheral ID
  * \param dmaChannel [in]: DMA stream ID
@@ -2553,7 +2568,7 @@ static dma_FunctionState_t Dma_Get_UartRequest( dma_PeriphReqId_t requestId )
  */
 static void Dma_Set_BufferableTransfer( dma_PeriphId_t dmaBus, dma_ChannelId_t dmaChannel, dma_PeriphReqId_t requestId )
 {
-    dma_FunctionState_t bufferable = Dma_Get_UartRequest( requestId );
+    dma_FunctionState_t bufferable = Dma_Get_BufferableRequest( requestId );
 
 #if (STM32H7_DEV_ID == 0x450UL)
     if( DMA_DEV_REV_ID_V > ( DBGMCU->IDCODE & DBGMCU_IDCODE_REV_ID ) )

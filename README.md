@@ -97,6 +97,7 @@ Module "channel" (`dma_ChannelId_t`, parameter `dmaChannel`) represents the
 | Memory to memory | DMA1 and DMA2, peripheral address is source, memory address is destination, circular mode not allowed. |
 | Request routing | `Dma_Set_PeripheralRequest()` writes the request ID to DMAMUX1 channel of the stream (stream for DMA1, stream + 8 for DMA2). |
 | UART / USART | Device errata "UART / USART - DMA transfer lock": stream serving UART / USART request uses bufferable transfers (SxCR TRBUFF) as ST HAL does (not on revision Y of STM32H74x / H75x). |
+| HASH | Device errata "HASH input data may be corrupted when DMA is used" (ES0392 2.2.28, ES0445 2.3.12): stream serving the HASH_IN request uses bufferable transfers (SxCR TRBUFF, same revision rule as UART / USART); no stream of the other DMA controller may be enabled during the HASH transfer (rule of the application). |
 | Memory | DMA1 / DMA2 can not access ITCM / DTCM - buffers have to be in AXI SRAM (main RAM of the linker script) or D2 / D3 SRAM. With enabled D-Cache the buffers need cache maintenance (clean before TX, invalidate after RX) or a non-cacheable MPU region. |
 | Interrupt handler | Processes only interrupts enabled on the stream, half transfer before transfer complete. |
 | STM32H7R / H7S | STM32H7R3 / H7R7 / H7S3 / H7S7 (Ral family STM32H7RS) have no DMA1 / DMA2 streams and no DMAMUX1 - the module is empty there (content under `DMA1`), unit tests are registered only for the classic lines. Their GPDMA1 / HPDMA1 are handled by the `Gpdma` module. |

@@ -758,6 +758,32 @@ void Ut_Dma_Set_PeripheralRequest_UartRequest_BufferableTransfer( void )
 
 
 /**
+ * \brief   HASH_IN request uses bufferable transfers (device errata "HASH input data may be corrupted when DMA is
+ *          used", ES0392 2.2.28 / ES0445 2.3.12).
+ *
+ * \details Revision V device. HASH_IN request on DMA2 stream 4, then SPI1_RX request on the same stream.
+ *
+ * \par Expected results
+ * - Lines with the HASH: HASH_IN sets TRBUFF, SPI1_RX clears it.
+ * - Lines without the HASH: the test is ignored.
+ */
+void Ut_Dma_Set_PeripheralRequest_HashRequest_BufferableTransfer( void )
+{
+#if defined(HASH)
+    DBGMCU->IDCODE = TEST_DMA_IDCODE_REV_V;
+
+    TEST_ASSERT_EQUAL( DMA_REQUEST_OK, Dma_Set_PeripheralRequest( DMA_PERIPH_2, DMA_STREAM_4, DMA_REQ_HASH_IN ) );
+    TEST_ASSERT_EQUAL_HEX32( DMA_SxCR_TRBUFF, DMA2_Stream4->CR );
+
+    TEST_ASSERT_EQUAL( DMA_REQUEST_OK, Dma_Set_PeripheralRequest( DMA_PERIPH_2, DMA_STREAM_4, DMA_REQ_SPI1_RX ) );
+    TEST_ASSERT_EQUAL_HEX32( 0u, DMA2_Stream4->CR );
+#else
+    TEST_IGNORE_MESSAGE( "Device line without the HASH" );
+#endif /* HASH */
+}
+
+
+/**
  * \brief   UART / USART request of revision Y device does not use bufferable transfers.
  *
  * \details Revision Y IDCODE, USART2_RX request on DMA1 stream 1.

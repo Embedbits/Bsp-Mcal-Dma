@@ -54,11 +54,20 @@ static void It_Dma_TransferErrorCallback    ( void );
 /** Maximal count of polling loops until the transfer / callback is finished */
 #define IT_DMA_WAIT_LOOPS                   ( 1000000u )
 
-/**
- * Address not accessible by DMA - reserved region of STM32H7 memory map (no CCM
- * RAM at 0x10000000), the DMA access ends with bus error.
- */
-#define IT_DMA_INACCESSIBLE_ADDR            ( 0x10000000u )
+/* Address not accessible by DMA - the DMA access ends with bus error. Boards are named by their MCU. */
+#if defined(IT_BOARD_STM32H7A3xI)  || \
+    defined(IT_BOARD_STM32H7A3xIQ)
+
+    /* RM0455: reserved region of the memory map (no CCM RAM at 0x10000000) - bus error checked on NUCLEO-H7A3ZI-Q */
+    #define IT_DMA_INACCESSIBLE_ADDR        ( 0x10000000u )
+
+#else
+
+    /* STM32H72x / H74x / H75x: DTCM (0x20000000) - DMA1 and DMA2 have no path to the DTCM (RM0468 Table 2), the
+     * reserved region at 0x10000000 is not answered by a bus error on STM32H72x */
+    #define IT_DMA_INACCESSIBLE_ADDR        ( 0x20000000u )
+
+#endif
 
 /* ============================== MACROS ==================================== */
 
@@ -507,7 +516,10 @@ static void It_Dma_WaitTransferInactive( dma_PeriphId_t dmaPeriph )
 {
     dma_FunctionState_t state = DMA_FUNCTION_ACTIVE;
 
-    for( uint32_t loopCnt = 0u; ( DMA_FUNCTION_INACTIVE != state ) && ( IT_DMA_WAIT_LOOPS > loopCnt ); loopCnt++ )
+    for( uint32_t loopCnt = 0u;
+         ( DMA_FUNCTION_INACTIVE != state ) &&
+         ( IT_DMA_WAIT_LOOPS > loopCnt );
+         loopCnt++ )
     {
         TEST_ASSERT_EQUAL( DMA_REQUEST_OK, Dma_Get_TransferState( dmaPeriph, IT_DMA_STREAM, &state ) );
     }
@@ -523,7 +535,10 @@ static void It_Dma_WaitTransferInactive( dma_PeriphId_t dmaPeriph )
  */
 static void It_Dma_WaitCallback( volatile const uint32_t * const callbackSeq )
 {
-    for( uint32_t loopCnt = 0u; ( 0u == *callbackSeq ) && ( IT_DMA_WAIT_LOOPS > loopCnt ); loopCnt++ )
+    for( uint32_t loopCnt = 0u;
+         ( 0u == *callbackSeq ) &&
+         ( IT_DMA_WAIT_LOOPS > loopCnt );
+         loopCnt++ )
     {
         /* Waiting for interrupt */
     }
