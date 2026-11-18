@@ -531,13 +531,13 @@ static void It_Dma_Get_M2mConfig( dma_ConfigStruct_t * const dmaConfig, const vo
 static void It_Dma_WaitTransferComplete( dma_PeriphId_t dmaBus )
 {
     dma_DataCount_t dataCount = 1u;
-    uint32_t        loopCnt   = 0u;
 
-    while( ( 0u                 != dataCount ) &&
-           ( IT_DMA_WAIT_LOOPS  >  loopCnt   )    )
+    for( uint32_t loopCnt = 0u;
+         ( 0u                != dataCount ) &&
+         ( IT_DMA_WAIT_LOOPS >  loopCnt   );
+         loopCnt++ )
     {
         TEST_ASSERT_EQUAL( DMA_REQUEST_OK, Dma_Get_DataCount( dmaBus, IT_DMA_CHANNEL, &dataCount ) );
-        loopCnt++;
     }
 
     TEST_ASSERT_EQUAL_UINT32_MESSAGE( 0u, dataCount, "Transfer not finished" );
@@ -551,13 +551,12 @@ static void It_Dma_WaitTransferComplete( dma_PeriphId_t dmaBus )
  */
 static void It_Dma_WaitCallback( volatile const uint32_t * const callbackSeq )
 {
-    uint32_t loopCnt = 0u;
-
-    while( ( 0u                == *callbackSeq ) &&
-           ( IT_DMA_WAIT_LOOPS  >  loopCnt     )    )
+    for( uint32_t loopCnt = 0u;
+         ( 0u                == *callbackSeq ) &&
+         ( IT_DMA_WAIT_LOOPS >  loopCnt      );
+         loopCnt++ )
     {
         /* Waiting for interrupt */
-        loopCnt++;
     }
 
     TEST_ASSERT_NOT_EQUAL_MESSAGE( 0u, *callbackSeq, "Callback not executed" );
